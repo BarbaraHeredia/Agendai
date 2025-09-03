@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <!-- Pacotes que adicionamos ao nosso projeto -->
+  <ItemGroup>
+    <!-- Pacote do Swagger, que já conhecemos -->
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+
+    <!-- NOVOS PACOTES PARA O ENTITY FRAMEWORK -->
+    
+    <!-- Pacote de "design" do EF Core, necessário para criar e atualizar o banco de dados pelo terminal -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    
+    <!-- Pacote do provedor de banco de dados. Começaremos com o SQLite, 
+         que é um banco de dados simples baseado em arquivo, perfeito para desenvolvimento local. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>
