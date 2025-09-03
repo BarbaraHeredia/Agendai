@@ -1,4 +1,5 @@
 using Agendai.Api.Data;
+using Agendai.Api.Models;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,28 +25,88 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 
-// --- ENDPOINTS DA API ---
+// --- ENDPOINTS DA API (CRUD Completo) ---
 
 app.MapGet("/", () => "Bem-vindo ao Agendai API!");
 
-// NOVO ENDPOINT: Listar todos os lembretes
-// Este é o coração da nossa API interagindo com o banco.
+// [R]ead All - Listar todos os lembretes
 app.MapGet("/lembretes", async (AppDbContext db) =>
 {
-    // 1. Injeção de Dependência em Ação:
-    //    O ASP.NET nos entrega uma instância do nosso 'AppDbContext' (que chamamos de 'db').
-    //    Não precisamos nos preocupar em como criá-lo.
-
-    // 2. Consulta com Entity Framework:
-    //    'db.Lembretes' acessa a tabela de lembretes.
-    //    '.ToListAsync()' é um comando do EF que se traduz para "SELECT * FROM Lembretes" em SQL.
-    //    'await' é usado porque a operação de banco de dados pode demorar, e não queremos travar a aplicação.
     var lembretes = await db.Lembretes.ToListAsync();
-    
-    // 3. Retorno da Resposta:
-    //    Retornamos um status 200 OK com a lista de lembretes em formato JSON.
     return Results.Ok(lembretes);
 });
 
+// [C]reate - Criar um novo lembrete
+app.MapPost("/lembretes", async (AppDbContext db, Lembrete lembrete) =>
+{
+    db.Lembretes.Add(lembrete);
+    await db.SaveChangesAsync();
+    return Results.Created($"/lembretes/{lembrete.Id}", lembrete);
+});
+
+// NOVO ENDPOINT: [R]ead One - Buscar um lembrete por ID
+app.MapGet("/lembretes/{id:int}", async (AppDbContext db, int id) => 
+{
+    // 1. Parâmetro de Rota:
+    //    O '{id:int}' na rota diz ao ASP.NET para esperar um número inteiro na URL.
+    //    Esse número é automaticamente passado para a variável 'id' da nossa função.
+
+    // 2. Buscando no Banco:
+    //    'db.Lembretes.FindAsync(id)' é um método otimizado do EF Core
+    //    para buscar um item pela sua chave primária. É muito eficiente.
+    var lembrete = await db.Lembretes.FindAsync(id);
+
+    // 3. Tratamento de "Não Encontrado":
+    //    Se 'FindAsync' não encontrar o lembrete, ele retorna 'null'.
+    //    É uma boa prática verificar isso e retornar um 404 Not Found.
+    if (lembrete is null)
+    {
+        return Results.NotFound();
+    }
+
+    return Results.Ok(lembrete);
+});
+
+// NOVO ENDPOINT: [U]pdate - Atualizar um lembrete existente
+app.MapPut("/lembretes/{id:int}", async (AppDbContext db, int id, Lembrete lembreteAtualizado) =>
+{
+    var lembreteExistente = await db.Lembretes.FindAsync(id);
+    if (lembreteExistente is null)
+    {
+        return Results.NotFound();
+    }
+
+    // Atualizamos as propriedades do objeto que encontramos no banco
+    // com os novos valores que recebemos na requisição.
+    lembreteExistente.Titulo = lembreteAtualizado.Titulo;
+    lembreteExistente.Descricao = lembreteAtualizado.Descricao;
+    lembreteExistente.Data = lembreteAtualizado.Data;
+    lembreteExistente.Concluido = lembreteAtualizado.Concluido;
+
+    // Salvamos as alterações no banco de dados.
+    await db.SaveChangesAsync();
+
+    // Retornamos 204 No Content, o status padrão para uma atualização bem-sucedida.
+    return Results.NoContent();
+});
+
+// NOVO ENDPOINT: [D]elete - Deletar um lembrete
+app.MapDelete("/lembretes/{id:int}", async (AppDbContext db, int id) =>
+{
+    var lembreteParaDeletar = await db.Lembretes.FindAsync(id);
+    if (lembreteParaDeletar is null)
+    {
+        return Results.NotFound();
+    }
+
+    // 'db.Lembretes.Remove(...)' prepara a operação de DELETE.
+    db.Lembretes.Remove(lembreteParaDeletar);
+
+    // E 'SaveChangesAsync()' executa a operação no banco.
+    await db.SaveChangesAsync();
+
+    return Results.NoContent();
+});
 
 app.Run();
+
